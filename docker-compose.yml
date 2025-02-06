@@ -14,22 +14,27 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - mongo
-      - redis
-
-  mongo:
-    image: mongo:4.4
-    container_name: url-shortener-mongo
-    volumes:
-      - mongo-data:/data/db
-    ports:
-      - "27017:27017"
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
 
   redis:
     image: redis:6
     container_name: url-shortener-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
-  mongo-data:
+  redis-data:
